@@ -1,0 +1,14 @@
+name = "AeroChat WhatsApp"
+client_id ="3b12f68037d0fa4122ceacbfe3f4f1c0"
+application_url = "https://introducing-cookie-rhythm-shadows.trycloudflare.com "
+embedded = true
+
+[access_scopes]
+scopes = "read_products,write_products"
+
+[auth]
+redirect_urls = [
+  "https://introducing-cookie-rhythm-shadows.trycloudflare.com /auth/callback"
+]
+[webhooks]
+api_version = "2024-01"

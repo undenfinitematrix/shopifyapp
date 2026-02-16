@@ -1,0 +1,21 @@
+{% schema %}
+{
+  "name": "AeroChat WhatsApp Widget",
+  "target": "body",
+  "settings": [
+    { "type": "checkbox", "id": "enabled", "label": "Enable widget", "default": true },
+    { "type": "text", "id": "phone", "label": "WhatsApp phone (with country code)", "default": "+919876543210" },
+    { "type": "text", "id": "message", "label": "Prefilled message", "default": "Hi! I'm interested in your products. Can you help me?" }
+  ]
+}
+{% endschema %}
+
+{% if block.settings.enabled and block.settings.phone != blank %}
+  <script>
+    window.__AEROCHAT_WA__ = {
+      phone: "{{ block.settings.phone | strip | replace: ' ', '' | replace: '+', '' }}",
+      message: {{ block.settings.message | json }}
+    };
+  </script>
+  {{ 'aerochat-whatsapp.js' | asset_url | script_tag }}
+{% endif %}
