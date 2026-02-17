@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "../supabaseClient";
 import {
   Page,
   Layout,
