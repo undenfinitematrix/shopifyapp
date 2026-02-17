@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
 import {
   Page,
   Layout,
@@ -18,6 +19,11 @@ import {
   InlineCode,
 } from "@shopify/polaris";
 import { PhoneIcon } from "@shopify/polaris-icons";
+
+// Initialize Supabase client with public/anon credentials
+const supabaseUrl = "https://zsizcawrakypkqlwqrrx.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzaXpjYXdyYWt5cGtxbHdxcnJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyOTcyOTksImV4cCI6MjA4Njg3MzI5OX0.Ev6Cmp4CUYJJPDylDCxbkR-GFh-tfeoIwKqIoRtSJt0";
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Custom WhatsApp Preview component (keeping this custom as Polaris doesn't have a storefront preview)
 function WhatsAppPreview({ phone, message, visible }) {
@@ -184,10 +190,69 @@ export default function WhatsAppSettingsPage() {
   const [phoneError, setPhoneError] = useState("");
   const [prefilledError, setPrefilledError] = useState("");
   const [welcomeError, setWelcomeError] = useState("");
-  const [messageError, setMessageError] = useState("");
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [backendWarning, setBackendWarning] = useState("");
+  // construct API base either from env or same origin
+  const API_BASE = import.meta.env.VITE_API_URL || window.location.origin;
+  const normalizedAPI = API_BASE.endsWith("/") ? API_BASE.slice(0, -1) : API_BASE;
+  // frontend origin for comparison
+  const frontendOrigin = window.location.origin;
+  // true only if VITE_API_URL is actually set to a different host
+  const hasBackend = !!import.meta.env.VITE_API_URL && normalizedAPI !== frontendOrigin;
+
+  // 🔹 Load saved settings when app opens
+  useEffect(() => {
+    async function loadSettings() {
+      const storageKey = `settings_global`;
+
+      // fetch from Supabase directly (no backend server needed)
+      try {
+        const { data, error } = await supabase
+          .from("whatsapp_settings")
+          .select("*")
+          .limit(1)
+          .single();
+
+        if (error) {
+          // ignore "no rows found" error, log others silently and fall back
+          if (error.code !== "PGRST116") {
+            console.warn("Supabase load error (falling back to localStorage):", error.code);
+          }
+          // fall back to localStorage
+          const localData = JSON.parse(localStorage.getItem(storageKey) || "null");
+          if (localData && localData.settings) {
+            setPhone(localData.settings.phone || "");
+            setWelcomeMessage(localData.settings.welcome_message || "Hi, How can we help you?");
+            setPrefilledMessage(localData.settings.prefilled_message || "");
+            setEnabled(localData.settings.enabled || false);
+          }
+          return;
+        }
+
+        if (data) {
+          setPhone(data.phone || "");
+          setWelcomeMessage(data.welcome_message || "Hi, How can we help you?");
+          setPrefilledMessage(data.prefilled_message || "");
+          setEnabled(data.enabled || false);
+        }
+      } catch (err) {
+        console.warn("Failed to load settings (using localStorage):", err?.message);
+        // fall back to localStorage
+        const localData = JSON.parse(localStorage.getItem(storageKey) || "null");
+        if (localData && localData.settings) {
+          setPhone(localData.settings.phone || "");
+          setWelcomeMessage(localData.settings.welcome_message || "Hi, How can we help you?");
+          setPrefilledMessage(localData.settings.prefilled_message || "");
+          setEnabled(localData.settings.enabled || false);
+        }
+      }
+    }
+
+    loadSettings();
+  }, [hasBackend, normalizedAPI]);
+
   
   const handlePrefilledChange = useCallback((value) => {
   setPrefilledMessage(value);
@@ -207,12 +272,7 @@ const handleWelcomeChange = useCallback((value) => {
     setDirty(true);
   }, []);
 
-  const handleMessageChange = useCallback((value) => {
-    setMessage(value);
-    setMessageError("");
-    setDirty(true);
-  }, []);
-
+  
   const handleToggle = useCallback(() => {
     setEnabled((prev) => !prev);
     setDirty(true);
@@ -241,18 +301,47 @@ const handleWelcomeChange = useCallback((value) => {
 
   const handleSave = useCallback(async () => {
     if (!validate()) return;
-
     setSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    const storageKey = `settings_global`;
+
+    // attempt to save to Supabase directly - always insert a new row
+    try {
+      const { error: insertError } = await supabase
+        .from("whatsapp_settings")
+        .insert({
+          phone,
+          welcome_message: welcomeMessage,
+          prefilled_message: prefilledMessage,
+          enabled,
+        });
+
+      if (insertError) throw insertError;
+
+      // save succeeded
+      console.log("Settings saved to Supabase successfully");
+    } catch (err) {
+      console.warn("Failed to save to Supabase:", err.message);
+      // fall back to localStorage
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          phone,
+          welcome_message: welcomeMessage,
+          prefilled_message: prefilledMessage,
+          enabled,
+        })
+      );
+      console.log("Settings saved to localStorage instead");
+    }
+
+    // 3️⃣ Show success UI
     setSaving(false);
     setSaveSuccess(true);
     setDirty(false);
-
     setTimeout(() => setSaveSuccess(false), 3000);
-  }, [validate]);
-
-  const cleanedPhone = phone.replace(/[\s\-()+ ]/g, "");
-
+  }, [phone, welcomeMessage, prefilledMessage, enabled, validate]);
+const cleanedPhone = phone.replace(/[\s\-()+ ]/g, "");
   // WhatsApp Link
  const whatsappLink = cleanedPhone
   ? prefilledMessage.trim()
@@ -269,7 +358,6 @@ const handleWelcomeChange = useCallback((value) => {
         content: "Save Settings",
         onAction: handleSave,
         loading: saving,
-        disabled: !dirty,
       }}
     >
       <BlockStack gap="500">
@@ -277,6 +365,12 @@ const handleWelcomeChange = useCallback((value) => {
         {saveSuccess && (
           <Banner tone="success" onDismiss={() => setSaveSuccess(false)}>
             Settings saved successfully
+          </Banner>
+        )}
+        {/* Backend warning (development only) */}
+        {backendWarning && (
+          <Banner tone="critical" onDismiss={() => setBackendWarning("")}> 
+            {backendWarning}
           </Banner>
         )}
 
