@@ -1,6 +1,9 @@
 api_version = "2026-01"
 
 [[extensions]]
+
+uid = "09cdb58d-960f-56ae-dfdb-d771ce4a4f72e8e7222c"
+
 type = "theme"
 name = "WhatsApp Chat Widget"
 handle = "whatsapp-chat-widget"
