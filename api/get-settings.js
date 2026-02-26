@@ -8,6 +8,13 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || FALLBACK_KEY
 );
 
+const DEFAULT_SETTINGS = {
+  phone: "",
+  welcome_message: "Hello! How can we help you?",
+  prefilled_message: "Hi, I have a question about my order",
+  enabled: false,
+};
+
 export default async function handler(req, res) {
   // CORS headers so the storefront widget can call this endpoint
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -29,13 +36,13 @@ export default async function handler(req, res) {
       .single();
 
     if (error && error.code !== "PGRST116") {
-      // PGRST116 = no rows returned; that's okay, return null
+      // PGRST116 = no rows returned; that's okay, return defaults
       throw error;
     }
 
-    res.status(200).json({ settings: data || null });
+    res.status(200).json({ settings: data || DEFAULT_SETTINGS });
   } catch (err) {
     console.error(err);
-    res.status(200).json({ settings: null });
+    res.status(200).json({ settings: DEFAULT_SETTINGS });
   }
 }
