@@ -9,10 +9,10 @@ const supabase = createClient(
 );
 
 const DEFAULT_SETTINGS = {
-  phone: "",
+  phone: "+916200606772",
   welcome_message: "Hello! How can we help you?",
   prefilled_message: "Hi, I have a question about my order",
-  enabled: false,
+  enabled: true,
 };
 
 export default async function handler(req, res) {
