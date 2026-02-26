@@ -1,8 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 
+const FALLBACK_URL = "https://zsizcawrakypkqlwqrrx.supabase.co";
+const FALLBACK_KEY = "sb_publishable_KB0iGUWFn_-ll7fi-oOOMA_Q_he-529";
+
 const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_URL || FALLBACK_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || FALLBACK_KEY
 );
 
 export default async function handler(req, res) {
