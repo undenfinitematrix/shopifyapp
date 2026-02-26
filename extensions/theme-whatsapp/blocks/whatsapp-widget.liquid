@@ -1,0 +1,17 @@
+{{ 'whatsapp-widget.css' | asset_url | stylesheet_tag }}
+
+<div
+  id="aerochat-whatsapp-root"
+  data-api-url="https://shopifyapp-one.vercel.app/api/get-settings"
+  style="display:none;"
+></div>
+
+<script src="{{ 'whatsapp-widget.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "WhatsApp Chat Widget",
+  "target": "body",
+  "settings": []
+}
+{% endschema %}

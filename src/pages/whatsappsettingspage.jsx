@@ -19,11 +19,9 @@ import {
   InlineCode,
 } from "@shopify/polaris";
 import { PhoneIcon } from "@shopify/polaris-icons";
-
-// Initialize Supabase client with public/anon credentials
-const supabaseUrl = "https://zsizcawrakypkqlwqrrx.supabase.co";
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzaXpjYXdyYWt5cGtxbHdxcnJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyOTcyOTksImV4cCI6MjA4Njg3MzI5OX0.Ev6Cmp4CUYJJPDylDCxbkR-GFh-tfeoIwKqIoRtSJt0";
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Note: Supabase operations are performed server-side by the API routes
+// under `/api/*`. Keep the browser bundle free of @supabase/supabase-js
+// to avoid bundling issues on Vercel.
 
 // Custom WhatsApp Preview component (keeping this custom as Polaris doesn't have a storefront preview)
 function WhatsAppPreview({ phone, message, visible }) {

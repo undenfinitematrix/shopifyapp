@@ -6,6 +6,16 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
+  // CORS headers so the storefront widget can call this endpoint
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept");
+
+  if (req.method === "OPTIONS") {
+    res.status(204).end();
+    return;
+  }
+
   try {
     // fetch the first/only settings record
     const { data, error } = await supabase

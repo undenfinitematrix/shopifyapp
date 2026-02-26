@@ -2,7 +2,7 @@
 
 client_id = "ded198766125339ce836575ee8593a78"
 name = "AeroChat WhatsApp 1"
-application_url = "https://introducing-cookie-rhythm-shadows.trycloudflare.com "
+application_url = "https://shopifyapp-one.vercel.app"
 embedded = true
 
 [build]
@@ -17,4 +17,4 @@ api_version = "2026-04"
 scopes = "read_products,write_products"
 
 [auth]
-redirect_urls = [ "https://introducing-cookie-rhythm-shadows.trycloudflare.com /api/auth" ]
+redirect_urls = [ "https://shopifyapp-one.vercel.app/api/auth" ]
