@@ -1,0 +1,18 @@
+# AEROCHAT JG TASK COMPLETE - the app installed on aerochat-ai-2.myshopify.com
+
+client_id = "91a601ccfdb968f5a7c7f807cea66999"
+name = "AEROCHAT JG TASK COMPLETE"
+application_url = "https://shopifyapp-one.vercel.app"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2026-01"
+
+[access_scopes]
+scopes = "read_products,write_products"
+
+[auth]
+redirect_urls = ["https://shopifyapp-one.vercel.app/auth/callback"]
