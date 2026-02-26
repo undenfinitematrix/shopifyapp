@@ -9,6 +9,16 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
+  // CORS headers for embedded app
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept");
+
+  if (req.method === "OPTIONS") {
+    res.status(204).end();
+    return;
+  }
+
   if (req.method !== "POST") return res.status(405).end();
 
   try {
@@ -18,6 +28,7 @@ export default async function handler(req, res) {
     const { data: existing, error: fetchError } = await supabase
       .from("whatsapp_settings")
       .select("id")
+      .order("id", { ascending: false })
       .limit(1)
       .single();
 

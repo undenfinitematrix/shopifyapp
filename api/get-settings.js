@@ -20,10 +20,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    // fetch the first/only settings record
+    // fetch the latest settings record (ordered by id desc in case of duplicates)
     const { data, error } = await supabase
       .from("whatsapp_settings")
       .select("*")
+      .order("id", { ascending: false })
       .limit(1)
       .single();
 

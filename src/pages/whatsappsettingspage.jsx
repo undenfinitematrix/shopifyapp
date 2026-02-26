@@ -210,6 +210,7 @@ export default function WhatsAppSettingsPage() {
         const { data, error } = await supabase
           .from("whatsapp_settings")
           .select("*")
+          .order("id", { ascending: false })
           .limit(1)
           .single();
 
@@ -303,34 +304,69 @@ const handleWelcomeChange = useCallback((value) => {
 
     const storageKey = `settings_global`;
 
-    // attempt to save to Supabase directly - always insert a new row
+    // save via API endpoint which properly upserts (update or insert)
     try {
-      const { error: insertError } = await supabase
-        .from("whatsapp_settings")
-        .insert({
+      const response = await fetch(`${normalizedAPI}/api/save-settings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           phone,
-          welcome_message: welcomeMessage,
-          prefilled_message: prefilledMessage,
+          welcomeMessage,
+          prefilledMessage,
           enabled,
-        });
+        }),
+      });
 
-      if (insertError) throw insertError;
+      const result = await response.json();
+      if (!response.ok || result.error) throw new Error(result.error || "Save failed");
 
-      // save succeeded
-      console.log("Settings saved to Supabase successfully");
+      console.log("Settings saved via API successfully");
     } catch (err) {
-      console.warn("Failed to save to Supabase:", err.message);
-      // fall back to localStorage
-      localStorage.setItem(
-        storageKey,
-        JSON.stringify({
-          phone,
-          welcome_message: welcomeMessage,
-          prefilled_message: prefilledMessage,
-          enabled,
-        })
-      );
-      console.log("Settings saved to localStorage instead");
+      console.warn("API save failed, trying direct Supabase:", err.message);
+      // fallback: try direct Supabase upsert
+      try {
+        const { data: existing } = await supabase
+          .from("whatsapp_settings")
+          .select("id")
+          .order("id", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (existing && existing.id) {
+          const { error } = await supabase
+            .from("whatsapp_settings")
+            .update({
+              phone,
+              welcome_message: welcomeMessage,
+              prefilled_message: prefilledMessage,
+              enabled,
+            })
+            .eq("id", existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("whatsapp_settings")
+            .insert({
+              phone,
+              welcome_message: welcomeMessage,
+              prefilled_message: prefilledMessage,
+              enabled,
+            });
+          if (error) throw error;
+        }
+        console.log("Settings saved to Supabase directly");
+      } catch (supaErr) {
+        console.warn("Supabase save also failed, using localStorage:", supaErr.message);
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify({
+            phone,
+            welcome_message: welcomeMessage,
+            prefilled_message: prefilledMessage,
+            enabled,
+          })
+        );
+      }
     }
 
     // 3️⃣ Show success UI
