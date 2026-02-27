@@ -9,7 +9,7 @@ const supabase = createClient(
 );
 
 const DEFAULT_SETTINGS = {
-  phone: "+916200606772",
+  phone: "",
   welcome_message: "Hello! How can we help you?",
   prefilled_message: "Hi, I have a question about my order",
   enabled: true,
