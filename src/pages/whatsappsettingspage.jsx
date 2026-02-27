@@ -19,6 +19,7 @@ import {
   InlineCode,
 } from "@shopify/polaris";
 import { PhoneIcon } from "@shopify/polaris-icons";
+import { toggleAppEmbed } from "../toggleAppEmbed";
 // Note: Supabase operations are performed server-side by the API routes
 // under `/api/*`. Keep the browser bundle free of @supabase/supabase-js
 // to avoid bundling issues on Vercel.
@@ -368,6 +369,9 @@ const handleWelcomeChange = useCallback((value) => {
         );
       }
     }
+
+    // Auto-enable/disable app embed on the storefront theme
+    toggleAppEmbed(enabled);
 
     // 3️⃣ Show success UI
     setSaving(false);
