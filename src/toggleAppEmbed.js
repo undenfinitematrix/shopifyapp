@@ -1,8 +1,16 @@
-// Programmatically enable/disable the WhatsApp widget app embed
-// in the merchant's active theme via the Shopify Admin REST API.
-// Uses App Bridge's shopify: URL scheme for auto-authentication.
+// Auto-enable the WhatsApp widget app embed on the storefront.
+// Uses two strategies:
+// 1. Programmatic: modify theme settings via Shopify Admin REST API
+// 2. Fallback: redirect merchant to theme editor (one-time setup)
 
 const API_VERSION = "2026-01";
+
+// User's app embed details
+const SHOP_DOMAIN = "aerochat-ai-2";
+const APP_EMBED_ID = "91a601ccfdb968f5a7c7f807cea66999/whatsapp-widget";
+const THEME_EDITOR_URL = `https://admin.shopify.com/store/${SHOP_DOMAIN}/themes/current/editor?context=apps&appEmbed=${APP_EMBED_ID}`;
+
+let hasRedirected = false;
 
 function isEmbedded() {
   try {
@@ -14,81 +22,51 @@ function isEmbedded() {
 
 export async function toggleAppEmbed(enable) {
   if (!isEmbedded()) return;
+  if (!enable) return;
 
+  // Strategy 1: Try programmatic Theme API approach
   try {
-    // 1. Get the main (published) theme
     const themesRes = await fetch(
       `shopify:admin/api/${API_VERSION}/themes.json?role=main`
     );
-    if (!themesRes.ok) return;
+    if (!themesRes.ok) throw new Error("themes fetch failed");
     const { themes } = await themesRes.json();
-    if (!themes || !themes.length) return;
+    if (!themes || !themes.length) throw new Error("no main theme");
     const themeId = themes[0].id;
 
-    // 2. Read the theme's settings_data.json
     const assetRes = await fetch(
       `shopify:admin/api/${API_VERSION}/themes/${themeId}/assets.json?asset[key]=config/settings_data.json`
     );
-    if (!assetRes.ok) return;
+    if (!assetRes.ok) throw new Error("asset fetch failed");
     const { asset } = await assetRes.json();
     const settings = JSON.parse(asset.value);
 
     const current = settings.current;
-    if (!current) return;
+    if (!current) throw new Error("no current settings");
     if (!current.blocks) current.blocks = {};
 
-    // 3. Find existing app embed block (search for whatsapp-chat-widget in type)
+    // Find existing app embed block
     let blockKey = null;
     for (const [key, block] of Object.entries(current.blocks)) {
-      if (block.type && block.type.includes("whatsapp-chat-widget")) {
+      if (
+        block.type &&
+        (block.type.includes("whatsapp-chat-widget") ||
+          block.type.includes("whatsapp-widget"))
+      ) {
         blockKey = key;
         break;
       }
     }
 
     if (blockKey) {
-      // Toggle the existing block
-      const alreadyEnabled = !current.blocks[blockKey].disabled;
-      if (alreadyEnabled === enable) return; // already in desired state
-      current.blocks[blockKey].disabled = !enable;
-    } else if (enable) {
-      // Block doesn't exist yet — add it
-      // Generate a random key for the block
-      const newKey = crypto.randomUUID
-        ? crypto.randomUUID()
-        : Math.random().toString(36).slice(2) + Date.now().toString(36);
-
-      // Get the app handle from Shopify
-      const gqlRes = await fetch(
-        `shopify:admin/api/${API_VERSION}/graphql.json`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: "{ app { handle installation { id } } }",
-          }),
-        }
-      );
-      if (!gqlRes.ok) return;
-      const gqlData = await gqlRes.json();
-      const appHandle = gqlData?.data?.app?.handle;
-      if (!appHandle) return;
-
-      // Extension UID from shopify.extension.toml
-      const extensionUid = "09cdb58d-960f-56ae-dfdb-d771ce4a4f72e8e7222c";
-
-      current.blocks[newKey] = {
-        type: `shopify://apps/${appHandle}/blocks/whatsapp-chat-widget/${extensionUid}`,
-        disabled: false,
-        settings: {},
-      };
+      if (!current.blocks[blockKey].disabled) return; // already enabled
+      current.blocks[blockKey].disabled = false;
     } else {
-      // Block doesn't exist and we want to disable — nothing to do
-      return;
+      // Block not found in theme — can't add programmatically, use redirect
+      throw new Error("app embed block not in theme yet");
     }
 
-    // 4. Save the modified settings back
-    await fetch(
+    const putRes = await fetch(
       `shopify:admin/api/${API_VERSION}/themes/${themeId}/assets.json`,
       {
         method: "PUT",
@@ -101,8 +79,17 @@ export async function toggleAppEmbed(enable) {
         }),
       }
     );
+    if (!putRes.ok) throw new Error("asset save failed");
+    return; // Success — no redirect needed
   } catch (err) {
-    // Silently fail — don't break the save flow
-    console.warn("[AeroChat] Could not toggle app embed:", err.message);
+    console.warn("[AeroChat] Programmatic toggle failed:", err.message);
+  }
+
+  // Strategy 2: Redirect to theme editor (one-time, only once per session)
+  if (!hasRedirected) {
+    hasRedirected = true;
+    if (window.top) {
+      window.top.location.href = THEME_EDITOR_URL;
+    }
   }
 }
