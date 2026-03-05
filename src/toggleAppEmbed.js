@@ -5,10 +5,7 @@
 
 const API_VERSION = "2026-01";
 
-// User's app embed details
-const SHOP_DOMAIN = "aerochat-ai-2";
 const APP_EMBED_ID = "91a601ccfdb968f5a7c7f807cea66999/whatsapp-widget";
-const THEME_EDITOR_URL = `https://admin.shopify.com/store/${SHOP_DOMAIN}/themes/current/editor?context=apps&appEmbed=${APP_EMBED_ID}`;
 
 let hasRedirected = false;
 
@@ -20,7 +17,13 @@ function isEmbedded() {
   }
 }
 
-export async function toggleAppEmbed(enable) {
+function getStoreHandle(shopDomain) {
+  // "aerochat-ai-2.myshopify.com" → "aerochat-ai-2"
+  if (!shopDomain) return "";
+  return shopDomain.replace(/\.myshopify\.com$/, "");
+}
+
+export async function toggleAppEmbed(enable, shopDomain) {
   if (!isEmbedded()) return;
   if (!enable) return;
 
@@ -88,8 +91,10 @@ export async function toggleAppEmbed(enable) {
   // Strategy 2: Redirect to theme editor (one-time, only once per session)
   if (!hasRedirected) {
     hasRedirected = true;
-    if (window.top) {
-      window.top.location.href = THEME_EDITOR_URL;
+    const storeHandle = getStoreHandle(shopDomain);
+    if (window.top && storeHandle) {
+      const themeEditorUrl = `https://admin.shopify.com/store/${storeHandle}/themes/current/editor?context=apps&appEmbed=${APP_EMBED_ID}`;
+      window.top.location.href = themeEditorUrl;
     }
   }
 }
