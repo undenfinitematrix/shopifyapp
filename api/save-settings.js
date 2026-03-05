@@ -22,12 +22,12 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
 
   try {
-    const { phone, welcomeMessage, prefilledMessage, enabled, shop } = req.body;
+    const { phone, welcomeMessage, prefilledMessage, enabled } = req.body;
 
-    // get existing record for this shop
-    let fetchQuery = supabase.from("whatsapp_settings").select("id");
-    if (shop) fetchQuery = fetchQuery.eq("shop", shop);
-    const { data: existing, error: fetchError } = await fetchQuery
+    // get existing record (should be only one since this is global settings)
+    const { data: existing, error: fetchError } = await supabase
+      .from("whatsapp_settings")
+      .select("id")
       .order("id", { ascending: false })
       .limit(1)
       .single();
@@ -56,7 +56,6 @@ export default async function handler(req, res) {
           welcome_message: welcomeMessage,
           prefilled_message: prefilledMessage,
           enabled,
-          shop: shop || null,
         });
 
       if (error) throw error;
