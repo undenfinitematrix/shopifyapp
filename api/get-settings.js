@@ -27,18 +27,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    const shop = req.query.shop || "";
-
-    // fetch settings for this specific shop (or latest record if no shop provided)
-    let query = supabase
+    // fetch the latest settings record (ordered by id desc in case of duplicates)
+    const { data, error } = await supabase
       .from("whatsapp_settings")
-      .select("*");
-
-    if (shop) {
-      query = query.eq("shop", shop);
-    }
-
-    const { data, error } = await query
+      .select("*")
       .order("id", { ascending: false })
       .limit(1)
       .single();

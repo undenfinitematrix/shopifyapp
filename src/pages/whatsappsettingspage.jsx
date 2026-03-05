@@ -200,8 +200,6 @@ export default function WhatsAppSettingsPage() {
   const frontendOrigin = window.location.origin;
   // true only if VITE_API_URL is actually set to a different host
   const hasBackend = !!import.meta.env.VITE_API_URL && normalizedAPI !== frontendOrigin;
-  // get shop domain from URL params (Shopify embeds pass this)
-  const shopDomain = new URLSearchParams(window.location.search).get("shop") || "";
 
   // 🔹 Load saved settings when app opens
   useEffect(() => {
@@ -210,15 +208,9 @@ export default function WhatsAppSettingsPage() {
 
       // fetch from Supabase directly (no backend server needed)
       try {
-        let query = supabase
+        const { data, error } = await supabase
           .from("whatsapp_settings")
-          .select("*");
-
-        if (shopDomain) {
-          query = query.eq("shop", shopDomain);
-        }
-
-        const { data, error } = await query
+          .select("*")
           .order("id", { ascending: false })
           .limit(1)
           .single();
@@ -323,7 +315,6 @@ const handleWelcomeChange = useCallback((value) => {
           welcomeMessage,
           prefilledMessage,
           enabled,
-          shop: shopDomain,
         }),
       });
 
@@ -335,15 +326,9 @@ const handleWelcomeChange = useCallback((value) => {
       console.warn("API save failed, trying direct Supabase:", err.message);
       // fallback: try direct Supabase upsert
       try {
-        let fallbackQuery = supabase
+        const { data: existing } = await supabase
           .from("whatsapp_settings")
-          .select("id");
-
-        if (shopDomain) {
-          fallbackQuery = fallbackQuery.eq("shop", shopDomain);
-        }
-
-        const { data: existing } = await fallbackQuery
+          .select("id")
           .order("id", { ascending: false })
           .limit(1)
           .single();
@@ -367,7 +352,6 @@ const handleWelcomeChange = useCallback((value) => {
               welcome_message: welcomeMessage,
               prefilled_message: prefilledMessage,
               enabled,
-              shop: shopDomain || null,
             });
           if (error) throw error;
         }
