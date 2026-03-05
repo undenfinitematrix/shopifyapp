@@ -10,8 +10,8 @@ const supabase = createClient(
 
 const DEFAULT_SETTINGS = {
   phone: "",
-  welcome_message: "",
-  prefilled_message: "",
+  welcome_message: "Hello! How can we help you?",
+  prefilled_message: "Hi, I have a question about my order",
   enabled: true,
 };
 
@@ -29,15 +29,41 @@ export default async function handler(req, res) {
   try {
     const shop = req.query.shop || "";
 
-    if (!shop) {
+    if (shop) {
+      // Try exact shop match first
+      const { data, error } = await supabase
+        .from("whatsapp_settings")
+        .select("*")
+        .eq("shop", shop)
+        .order("id", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (data) {
+        return res.status(200).json({ settings: data });
+      }
+
+      // Fallback: try row with null shop (migration from pre-shop era)
+      const { data: legacyData } = await supabase
+        .from("whatsapp_settings")
+        .select("*")
+        .is("shop", null)
+        .order("id", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (legacyData) {
+        return res.status(200).json({ settings: legacyData });
+      }
+
+      // No data at all for this shop — return defaults
       return res.status(200).json({ settings: DEFAULT_SETTINGS });
     }
 
-    // Fetch settings for this specific shop only
+    // No shop param — fetch latest record globally (backwards compat)
     const { data, error } = await supabase
       .from("whatsapp_settings")
       .select("*")
-      .eq("shop", shop)
       .order("id", { ascending: false })
       .limit(1)
       .single();

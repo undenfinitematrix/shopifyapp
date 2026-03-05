@@ -22,11 +22,7 @@
     var welcomeMessage = settings.welcome_message || "";
     var prefilledMessage = settings.prefilled_message || "";
     var cleanPhone = digitsOnly(phone);
-    console.log("[AeroChat Widget] renderWidget called:", { phone: phone, cleanPhone: cleanPhone, welcomeMessage: welcomeMessage, prefilledMessage: prefilledMessage });
-    if (!cleanPhone) {
-      console.warn("[AeroChat Widget] No valid phone number, skipping render");
-      return;
-    }
+    if (!cleanPhone) return;
 
     var waUrl = buildWhatsAppUrl(cleanPhone, prefilledMessage);
 
@@ -73,45 +69,24 @@
 
     container.appendChild(fab);
     document.body.appendChild(container);
-    console.log("[AeroChat Widget] Widget rendered successfully");
   }
 
   function init() {
     var root = document.getElementById("aerochat-whatsapp-root");
-    console.log("[AeroChat Widget] init() called. root element:", root);
-    if (!root) {
-      console.warn("[AeroChat Widget] No #aerochat-whatsapp-root element found — app embed not enabled");
-      return;
-    }
+    if (!root) return;
 
     var apiUrl = root.getAttribute("data-api-url");
-    console.log("[AeroChat Widget] API URL:", apiUrl);
-    if (!apiUrl) {
-      console.warn("[AeroChat Widget] No data-api-url attribute found");
-      return;
-    }
+    if (!apiUrl) return;
 
     fetch(apiUrl)
-      .then(function (res) {
-        console.log("[AeroChat Widget] API response status:", res.status);
-        return res.json();
-      })
+      .then(function (res) { return res.json(); })
       .then(function (data) {
-        console.log("[AeroChat Widget] API response data:", JSON.stringify(data));
         var settings = data.settings;
-        if (!settings) {
-          console.warn("[AeroChat Widget] No settings in response");
-          return;
-        }
-        if (!settings.enabled) {
-          console.warn("[AeroChat Widget] Widget is disabled (enabled=" + settings.enabled + ")");
-          return;
-        }
-        console.log("[AeroChat Widget] Settings OK, rendering widget...");
+        if (!settings || !settings.enabled) return;
         renderWidget(settings);
       })
       .catch(function (err) {
-        console.error("[AeroChat Widget] Failed to load settings:", err.message);
+        console.warn("[AeroChat] Could not load widget settings");
       });
   }
 
