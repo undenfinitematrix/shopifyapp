@@ -182,9 +182,7 @@ export default function WhatsAppSettingsPage() {
   const [enabled, setEnabled] = useState(false);
   const [phone, setPhone] = useState("");
   const [prefilledMessage, setPrefilledMessage] = useState(""); // default OFF
-  const [welcomeMessage, setWelcomeMessage] = useState(
-  "Hi, How can we help you?"
-   );
+  const [welcomeMessage, setWelcomeMessage] = useState("");
    
   const [phoneError, setPhoneError] = useState("");
   const [prefilledError, setPrefilledError] = useState("");
@@ -224,7 +222,7 @@ export default function WhatsAppSettingsPage() {
 
         if (data) {
           setPhone(data.phone || "");
-          setWelcomeMessage(data.welcome_message || "Hi, How can we help you?");
+          setWelcomeMessage(data.welcome_message || "");
           setPrefilledMessage(data.prefilled_message || "");
           setEnabled(data.enabled || false);
         }

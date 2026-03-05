@@ -10,8 +10,8 @@ const supabase = createClient(
 
 const DEFAULT_SETTINGS = {
   phone: "",
-  welcome_message: "Hello! How can we help you?",
-  prefilled_message: "Hi, I have a question about my order",
+  welcome_message: "",
+  prefilled_message: "",
   enabled: true,
 };
 
