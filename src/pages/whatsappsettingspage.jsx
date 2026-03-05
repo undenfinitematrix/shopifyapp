@@ -227,23 +227,6 @@ export default function WhatsAppSettingsPage() {
           setWelcomeMessage(data.welcome_message || "Hi, How can we help you?");
           setPrefilledMessage(data.prefilled_message || "");
           setEnabled(data.enabled || false);
-          return;
-        }
-
-        // Fallback: try legacy row with shop=null (migration)
-        const { data: legacyData } = await supabase
-          .from("whatsapp_settings")
-          .select("*")
-          .is("shop", null)
-          .order("id", { ascending: false })
-          .limit(1)
-          .single();
-
-        if (legacyData) {
-          setPhone(legacyData.phone || "");
-          setWelcomeMessage(legacyData.welcome_message || "Hi, How can we help you?");
-          setPrefilledMessage(legacyData.prefilled_message || "");
-          setEnabled(legacyData.enabled || false);
         }
       } catch (err) {
         console.warn("Failed to load settings:", err?.message);
