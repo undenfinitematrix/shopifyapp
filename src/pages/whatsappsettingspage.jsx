@@ -206,49 +206,47 @@ export default function WhatsAppSettingsPage() {
   // 🔹 Load saved settings when app opens
   useEffect(() => {
     async function loadSettings() {
-      const storageKey = `settings_global`;
-
       // fetch from Supabase directly (no backend server needed)
       try {
-        let loadQuery = supabase.from("whatsapp_settings").select("*");
-        if (shopDomain) loadQuery = loadQuery.eq("shop", shopDomain);
-        const { data, error } = await loadQuery
+        if (!shopDomain) {
+          // No shop domain available — can't load store-specific settings
+          return;
+        }
+
+        // Try exact shop match
+        const { data, error } = await supabase
+          .from("whatsapp_settings")
+          .select("*")
+          .eq("shop", shopDomain)
           .order("id", { ascending: false })
           .limit(1)
           .single();
-
-        if (error) {
-          // ignore "no rows found" error, log others silently and fall back
-          if (error.code !== "PGRST116") {
-            console.warn("Supabase load error (falling back to localStorage):", error.code);
-          }
-          // fall back to localStorage
-          const localData = JSON.parse(localStorage.getItem(storageKey) || "null");
-          if (localData && localData.settings) {
-            setPhone(localData.settings.phone || "");
-            setWelcomeMessage(localData.settings.welcome_message || "Hi, How can we help you?");
-            setPrefilledMessage(localData.settings.prefilled_message || "");
-            setEnabled(localData.settings.enabled || false);
-          }
-          return;
-        }
 
         if (data) {
           setPhone(data.phone || "");
           setWelcomeMessage(data.welcome_message || "Hi, How can we help you?");
           setPrefilledMessage(data.prefilled_message || "");
           setEnabled(data.enabled || false);
+          return;
+        }
+
+        // Fallback: try legacy row with shop=null (migration)
+        const { data: legacyData } = await supabase
+          .from("whatsapp_settings")
+          .select("*")
+          .is("shop", null)
+          .order("id", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (legacyData) {
+          setPhone(legacyData.phone || "");
+          setWelcomeMessage(legacyData.welcome_message || "Hi, How can we help you?");
+          setPrefilledMessage(legacyData.prefilled_message || "");
+          setEnabled(legacyData.enabled || false);
         }
       } catch (err) {
-        console.warn("Failed to load settings (using localStorage):", err?.message);
-        // fall back to localStorage
-        const localData = JSON.parse(localStorage.getItem(storageKey) || "null");
-        if (localData && localData.settings) {
-          setPhone(localData.settings.phone || "");
-          setWelcomeMessage(localData.settings.welcome_message || "Hi, How can we help you?");
-          setPrefilledMessage(localData.settings.prefilled_message || "");
-          setEnabled(localData.settings.enabled || false);
-        }
+        console.warn("Failed to load settings:", err?.message);
       }
     }
 
@@ -305,8 +303,6 @@ const handleWelcomeChange = useCallback((value) => {
     if (!validate()) return;
     setSaving(true);
 
-    const storageKey = `settings_global`;
-
     // save via API endpoint which properly upserts (update or insert)
     try {
       const response = await fetch(`${normalizedAPI}/api/save-settings`, {
@@ -329,9 +325,9 @@ const handleWelcomeChange = useCallback((value) => {
       console.warn("API save failed, trying direct Supabase:", err.message);
       // fallback: try direct Supabase upsert
       try {
-        const { data: existing } = await supabase
-          .from("whatsapp_settings")
-          .select("id")
+        let fetchQuery = supabase.from("whatsapp_settings").select("id");
+        if (shopDomain) fetchQuery = fetchQuery.eq("shop", shopDomain);
+        const { data: existing } = await fetchQuery
           .order("id", { ascending: false })
           .limit(1)
           .single();
@@ -344,6 +340,7 @@ const handleWelcomeChange = useCallback((value) => {
               welcome_message: welcomeMessage,
               prefilled_message: prefilledMessage,
               enabled,
+              shop: shopDomain || null,
             })
             .eq("id", existing.id);
           if (error) throw error;
@@ -355,21 +352,13 @@ const handleWelcomeChange = useCallback((value) => {
               welcome_message: welcomeMessage,
               prefilled_message: prefilledMessage,
               enabled,
+              shop: shopDomain || null,
             });
           if (error) throw error;
         }
         console.log("Settings saved to Supabase directly");
       } catch (supaErr) {
-        console.warn("Supabase save also failed, using localStorage:", supaErr.message);
-        localStorage.setItem(
-          storageKey,
-          JSON.stringify({
-            phone,
-            welcome_message: welcomeMessage,
-            prefilled_message: prefilledMessage,
-            enabled,
-          })
-        );
+        console.warn("Supabase save also failed:", supaErr.message);
       }
     }
 
