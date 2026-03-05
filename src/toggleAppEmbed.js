@@ -6,6 +6,7 @@
 const API_VERSION = "2026-01";
 
 const APP_EMBED_ID = "91a601ccfdb968f5a7c7f807cea66999/whatsapp-widget";
+const BLOCK_TYPE = "shopify://apps/aerochat-whatsapp-chat-button/blocks/whatsapp-widget/09cdb58d-960f-56ae-dfdb-d771ce4a4f72e8e7222c";
 
 let hasRedirected = false;
 
@@ -18,7 +19,6 @@ function isEmbedded() {
 }
 
 function getStoreHandle(shopDomain) {
-  // "aerochat-ai-2.myshopify.com" → "aerochat-ai-2"
   if (!shopDomain) return "";
   return shopDomain.replace(/\.myshopify\.com$/, "");
 }
@@ -63,11 +63,22 @@ export async function toggleAppEmbed(enable, shopDomain) {
     }
 
     if (blockKey) {
-      if (!current.blocks[blockKey].disabled) return; // already enabled
+      // Block exists — enable it if disabled
+      if (!current.blocks[blockKey].disabled) {
+        console.log("[AeroChat] Block already enabled, nothing to do");
+        return;
+      }
       current.blocks[blockKey].disabled = false;
+      console.log("[AeroChat] Enabling existing block:", blockKey);
     } else {
-      // Block not found in theme — can't add programmatically, use redirect
-      throw new Error("app embed block not in theme yet");
+      // Block not found — add it to the theme
+      const newKey = "aerochat_whatsapp_" + Date.now();
+      current.blocks[newKey] = {
+        type: BLOCK_TYPE,
+        disabled: false,
+        settings: {},
+      };
+      console.log("[AeroChat] Adding new app embed block:", newKey);
     }
 
     const putRes = await fetch(
