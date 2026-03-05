@@ -344,7 +344,7 @@ const handleWelcomeChange = useCallback((value) => {
     }
 
     // Auto-enable/disable app embed on the storefront theme
-    toggleAppEmbed(enabled, shopDomain);
+    await toggleAppEmbed(enabled, shopDomain);
 
     // 3️⃣ Show success UI
     setSaving(false);

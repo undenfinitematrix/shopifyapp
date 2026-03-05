@@ -24,6 +24,7 @@ function getStoreHandle(shopDomain) {
 }
 
 export async function toggleAppEmbed(enable, shopDomain) {
+  console.log("[AeroChat] toggleAppEmbed called:", { enable, shopDomain, isEmbedded: isEmbedded() });
   if (!isEmbedded()) return;
   if (!enable) return;
 
@@ -83,17 +84,20 @@ export async function toggleAppEmbed(enable, shopDomain) {
       }
     );
     if (!putRes.ok) throw new Error("asset save failed");
+    console.log("[AeroChat] Programmatic toggle SUCCESS");
     return; // Success — no redirect needed
   } catch (err) {
     console.warn("[AeroChat] Programmatic toggle failed:", err.message);
   }
 
   // Strategy 2: Redirect to theme editor (one-time, only once per session)
-  if (!hasRedirected) {
+  const storeHandle = getStoreHandle(shopDomain);
+  console.log("[AeroChat] Falling back to redirect. storeHandle:", storeHandle, "hasRedirected:", hasRedirected);
+  if (!hasRedirected && storeHandle) {
     hasRedirected = true;
-    const storeHandle = getStoreHandle(shopDomain);
-    if (window.top && storeHandle) {
-      const themeEditorUrl = `https://admin.shopify.com/store/${storeHandle}/themes/current/editor?context=apps&appEmbed=${APP_EMBED_ID}`;
+    const themeEditorUrl = `https://admin.shopify.com/store/${storeHandle}/themes/current/editor?context=apps&appEmbed=${APP_EMBED_ID}`;
+    console.log("[AeroChat] Redirecting to:", themeEditorUrl);
+    if (window.top) {
       window.top.location.href = themeEditorUrl;
     }
   }
