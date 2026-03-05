@@ -200,6 +200,8 @@ export default function WhatsAppSettingsPage() {
   const frontendOrigin = window.location.origin;
   // true only if VITE_API_URL is actually set to a different host
   const hasBackend = !!import.meta.env.VITE_API_URL && normalizedAPI !== frontendOrigin;
+  // get shop domain from URL params (Shopify embeds pass this)
+  const shopDomain = new URLSearchParams(window.location.search).get("shop") || "";
 
   // 🔹 Load saved settings when app opens
   useEffect(() => {
@@ -315,6 +317,7 @@ const handleWelcomeChange = useCallback((value) => {
           welcomeMessage,
           prefilledMessage,
           enabled,
+          shop: shopDomain,
         }),
       });
 
