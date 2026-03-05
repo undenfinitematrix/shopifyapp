@@ -1,7 +1,7 @@
 # AEROCHAT JG TASK COMPLETE - the app installed on aerochat-ai-2.myshopify.com
 
 client_id = "91a601ccfdb968f5a7c7f807cea66999"
-name = "Aerochat Whatsapp Chat Button"
+name = "AeroChat Whatsapp Chat Button"
 application_url = "https://shopifyapp-one.vercel.app"
 embedded = true
 
