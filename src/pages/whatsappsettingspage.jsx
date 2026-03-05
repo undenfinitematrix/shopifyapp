@@ -200,6 +200,8 @@ export default function WhatsAppSettingsPage() {
   const frontendOrigin = window.location.origin;
   // true only if VITE_API_URL is actually set to a different host
   const hasBackend = !!import.meta.env.VITE_API_URL && normalizedAPI !== frontendOrigin;
+  // get shop domain from URL params (Shopify embeds pass this)
+  const shopDomain = new URLSearchParams(window.location.search).get("shop") || "";
 
   // 🔹 Load saved settings when app opens
   useEffect(() => {
@@ -208,9 +210,9 @@ export default function WhatsAppSettingsPage() {
 
       // fetch from Supabase directly (no backend server needed)
       try {
-        const { data, error } = await supabase
-          .from("whatsapp_settings")
-          .select("*")
+        let loadQuery = supabase.from("whatsapp_settings").select("*");
+        if (shopDomain) loadQuery = loadQuery.eq("shop", shopDomain);
+        const { data, error } = await loadQuery
           .order("id", { ascending: false })
           .limit(1)
           .single();
@@ -315,6 +317,7 @@ const handleWelcomeChange = useCallback((value) => {
           welcomeMessage,
           prefilledMessage,
           enabled,
+          shop: shopDomain,
         }),
       });
 

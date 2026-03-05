@@ -27,7 +27,40 @@ export default async function handler(req, res) {
   }
 
   try {
-    // fetch the latest settings record (ordered by id desc in case of duplicates)
+    const shop = req.query.shop || "";
+
+    if (shop) {
+      // Try exact shop match first
+      const { data, error } = await supabase
+        .from("whatsapp_settings")
+        .select("*")
+        .eq("shop", shop)
+        .order("id", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (data) {
+        return res.status(200).json({ settings: data });
+      }
+
+      // Fallback: try row with null shop (migration from pre-shop era)
+      const { data: legacyData } = await supabase
+        .from("whatsapp_settings")
+        .select("*")
+        .is("shop", null)
+        .order("id", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (legacyData) {
+        return res.status(200).json({ settings: legacyData });
+      }
+
+      // No data at all for this shop — return defaults
+      return res.status(200).json({ settings: DEFAULT_SETTINGS });
+    }
+
+    // No shop param — fetch latest record globally (backwards compat)
     const { data, error } = await supabase
       .from("whatsapp_settings")
       .select("*")
@@ -36,7 +69,6 @@ export default async function handler(req, res) {
       .single();
 
     if (error && error.code !== "PGRST116") {
-      // PGRST116 = no rows returned; that's okay, return defaults
       throw error;
     }
 
