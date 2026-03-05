@@ -210,9 +210,9 @@ export default function WhatsAppSettingsPage() {
 
       // fetch from Supabase directly (no backend server needed)
       try {
-        const { data, error } = await supabase
-          .from("whatsapp_settings")
-          .select("*")
+        let loadQuery = supabase.from("whatsapp_settings").select("*");
+        if (shopDomain) loadQuery = loadQuery.eq("shop", shopDomain);
+        const { data, error } = await loadQuery
           .order("id", { ascending: false })
           .limit(1)
           .single();
