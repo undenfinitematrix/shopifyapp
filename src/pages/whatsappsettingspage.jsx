@@ -179,7 +179,7 @@ function WhatsAppPreview({ phone, message, visible }) {
 }
 
 export default function WhatsAppSettingsPage() {
-  const [enabled, setEnabled] = useState(false);
+  const [enabled, setEnabled] = useState(true);
   const [phone, setPhone] = useState("");
   const [prefilledMessage, setPrefilledMessage] = useState(""); // default OFF
   const [welcomeMessage, setWelcomeMessage] = useState("");
@@ -351,7 +351,7 @@ const handleWelcomeChange = useCallback((value) => {
     setSaveSuccess(true);
     setDirty(false);
     setTimeout(() => setSaveSuccess(false), 3000);
-  }, [phone, welcomeMessage, prefilledMessage, enabled, validate]);
+  }, [phone, welcomeMessage, prefilledMessage, enabled, validate, shopDomain]);
 const cleanedPhone = phone.replace(/[\s\-()+ ]/g, "");
   // WhatsApp Link
  const whatsappLink = cleanedPhone
